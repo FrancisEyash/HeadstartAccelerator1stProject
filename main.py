@@ -53,6 +53,24 @@ def prepare_input(credit_score, location, gender, age, tenure, balance,         
     input_df = pd.DataFrame([input_dict])
     return input_df, input_dict
 
+#Now let's define a function to make predictions using the machine learning models we trained
+
+def make_predictions(input_df, input_dict):
+
+  probabilities = {
+    'XGBoost': xgboost_model.predict_proba(input_df)[0][1],
+    'Random Forest': random_forest_model.predict_proba(input_df)[0][1],
+    'K-Nearest Neighbors': knn_model.predict_proba(input_df)[0][1],
+  }
+
+  avg_probability = np.mean(list(probabilities.values()))
+
+  st.markdown("### Model Probabilities")
+  for model, prob in probabilities.items():
+    st.write(f"{model} {prob}")
+  st.write(f"Average Probability: {avg_probability}")
+
+
 
 st.title("Customer Churn Prediction")
 
