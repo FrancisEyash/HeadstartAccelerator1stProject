@@ -6,6 +6,22 @@ import os
 from openai import OpenAI
 import utils as ut
 
+#OVERVIEW OF PROJECT
+
+# PART 1:
+# - Downloading the dataset
+# - Understanding the dataset
+# - Preprocessing the dataset
+# - Training the machine learning models
+# - Evaluating the machine learning models
+
+# PART 2:
+# - Building the web app
+#   - Creating the UI and charts
+#   - Making predictions with machine learning models
+#   - Generating personalized emails with Llama 3.1 via Groq
+
+
 # The model prediciton explanation here will be generated using the LAMA 3.2 
 # large language model, which was recently released by meta. We're going to use 
 # this model through the GROQ API which allows us to access various open source
