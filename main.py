@@ -1,6 +1,29 @@
 import pandas as pd
 import streamlit as st
 import pickle
+import numpy as np
+import os
+from openai import OpenAI
+
+# The model prediciton explanation here will be generated using the LAMA 3.2 
+# large language model, which was recently released by meta. We're going to use 
+# this model through the GROQ API which allows us to access various open source
+# models throught one API.
+
+# Now what we need to de is to initialize a openai client with a GROQ API endpoint
+# so the cool thing about the OpenAI library is that it provides a standard API
+# that most other large language model API providers have adopted. So, by just 
+# changing the base_url and the API key, we can use many other API providers such
+# as fireworks, togetherai just through one simple interface here.
+# In this case we're using the GROQ API because it's free and it's the fastest inference.
+# which means it generates text the fastest and that's actually GROQ has built it's
+# own hardware to run LLMS on. So it's called the LPU or Language Processing
+# Unit and it's upto 10 times faster than Nvidia GPUs.
+
+client = OpenAI(
+  base_url = "https://api.groq.com/openai/v1",
+  api_key = os.environ.get('GROQ_API_KEY')
+)
 
 # Let's define a function to load the machine learning models we trained.
 
@@ -65,10 +88,89 @@ def make_predictions(input_df, input_dict):
 
   avg_probability = np.mean(list(probabilities.values()))
 
+  # This code displays the probabilities of the models on the frontend of our 
+  # web app.
   st.markdown("### Model Probabilities")
   for model, prob in probabilities.items():
     st.write(f"{model} {prob}")
   st.write(f"Average Probability: {avg_probability}")
+
+  return avg_probability
+
+
+# Now let's define a function to explain the model predictions
+
+def explain_prediction(probability, input_dict, surname):
+
+  # We send this prompt to LAMA 3.2 to explain the prediction. The idea of this 
+  # prompt is that we're giving the LLM a lot of information about the customer
+  # and the machine learning model's prediction and asking it to explain in a way 
+  # that is easy to understand.
+  prompt = f""" You are an expert data scientist at a bank, where you specialize
+            in interpreting and explaining predictions of machine learning
+            models.
+            
+  
+  Your machine learning model has predicted that a customer named {surname} has a
+  {round(probability * 100, 1)}% probability of churning, based on the info 
+  provided below.
+        
+  Here is the customer's information:
+  {input_dict}
+  
+  Here are the machine learning model's top 10 important features for 
+  predicting churn:
+  
+    Feature.          |   Importance
+    --------------------------------
+    NumOfProducts     |  0.323888
+    IsActiveMember    |  0.164146
+    Age               |  0.109550
+    Geography_Germany |  0.091373
+    Balance           |  0.052786
+    Geography_France  |  0.046463
+    Gender_Female     |  0.045283
+    Geography_Spain   |  0.036855
+    CreditScore       |  0.035005
+    EstimatedSalary   |  0.032655
+    HasCrCard         |  0.031940
+    Tenure            |  0.030054
+    Gender_Male       |  0.000000
+    
+    
+
+  {pd.set_option('display.max_columns', None)}
+
+  Here are summary statistics of the churned customers:
+
+  {df[df['Exited'] == 1].describe()}
+
+  Here are summary statistics of the non-churned customers:
+  
+  {df[df['Exited'] == 0].describe()}
+
+
+- If the customer has over a 40% risk of churning, generate a 3 sentence explanation of why they are at a risk of churning.
+- If the customer has less than 20% risk of churning, generate a 3 sentence explanation of why they might not be at risk of churning.
+- Your explanation should be based on the customer's information, the summary
+statistics of churned and non-churned customers, and the feature importances provided.
+
+
+        Don't mention the probability of churning, or the machine learning model, or say anything like "Based on the machine learning model's prediction and top 10 most important features", just explain the prediction.
+          
+        """
+
+  print("EXPLANATION PROMPT", prompt)
+
+  raw_response = client.chat.completions.create(
+    model='llama-3.2-3b-preview',
+    messages=[{
+      "role": "user",
+      "content": prompt
+    }],
+  )
+
+  return raw_response.choices[0].message.content # response from the LLM
 
 
 
@@ -168,3 +270,16 @@ if selected_customer_option:
       min_value=0.0,
       value=float(selected_customer['EstimatedSalary'])
     )
+
+
+  input_df, input_dict = prepare_input(credit_score, location, gender, age, tenure, balance, num_of_products, has_credit_card,is_active_member, estimated_salary)
+
+  avg_probability = make_predictions(input_df, input_dict)
+
+  explanation = explain_prediction(avg_probability, input_dict, selected_customer['Surname'])
+
+  st.markdown("------")
+
+  st.subheader("Explanation of Prediction")
+
+  st.markdown(explanation)

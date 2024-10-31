@@ -8,6 +8,8 @@ authors = ["Your Name <you@example.com>"]
 python = ">=3.10.0,<3.11"
 streamlit = "^1.27.2"
 pandas = "^2.2.3"
+numpy = "^2.1.2"
+openai = "^1.53.0"
 
 [tool.pyright]
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md
