@@ -20,6 +20,10 @@ from openai import OpenAI
 # own hardware to run LLMS on. So it's called the LPU or Language Processing
 # Unit and it's upto 10 times faster than Nvidia GPUs.
 
+# An LLM or Large Language Model is a type of AI model designed to understand and 
+# generate human-like text based on large amounts of language data.
+# Examples of LLMs include GPT-4 from OpenAI, LLAMA from meta and Claude from 
+# Anthropic.
 client = OpenAI(
   base_url = "https://api.groq.com/openai/v1",
   api_key = os.environ.get('GROQ_API_KEY')
@@ -173,6 +177,47 @@ statistics of churned and non-churned customers, and the feature importances pro
   return raw_response.choices[0].message.content # response from the LLM
 
 
+# Now, let's define a function to generate a personalized email send to the user
+# to incentivize them to stay with the bank.
+
+def generate_email(probability, input_dict, explanation, surname):
+
+  prompt = f"""
+        You are a manager at HS Bank. You are responsible for ensuring customers
+        stay with the bank and are incentivized with various offers.
+
+        You noticed a customer named{surname} has a {round(probability * 100, 1)}%
+        probability of churning.
+
+        Here is the customer's information:
+        {input_dict}
+
+        Here is some explanation as to why the customer might be at risk of                 churning:
+
+        {explanation}
+
+        Generate an email to the customer based on their information, asking them to
+        stay if they are at risk of churning, or offering them incentives so that
+        they become more loyal to the bank.
+
+        Make sure to list out a set of incentives to stay based on their info, in 
+        bullet point format. Don't ever mention the probability of churning, or the
+        machine learning model to the customer.
+  """
+
+  raw_response = client.chat.completions.create(
+    model='llama-3.1-8b-instant',
+    messages=[{
+      "role": "user",
+      "content": prompt
+    }],
+  )
+
+  print("\n\nEMAIL PROMPT", prompt)
+
+  return raw_response.choices[0].message.content
+
+
 
 st.title("Customer Churn Prediction")
 
@@ -283,3 +328,12 @@ if selected_customer_option:
   st.subheader("Explanation of Prediction")
 
   st.markdown(explanation)
+
+
+  email = generate_email(avg_probability, input_dict, explanation, selected_customer['Surname'])
+
+  st.markdown("------")
+
+  st.subheader("Personalized Email")
+
+  st.markdown(email)
