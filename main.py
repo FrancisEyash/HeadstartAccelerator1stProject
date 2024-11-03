@@ -42,8 +42,8 @@ import utils as ut
 # Examples of LLMs include GPT-4 from OpenAI, LLAMA from meta and Claude from 
 # Anthropic.
 client = OpenAI(
-  base_url = "https://api.groq.com/openai/v1",
-  api_key = os.environ.get('GROQ_API_KEY')
+    base_url="https://api.groq.com/openai/v1",
+    api_key=os.environ.get("GROQ_API_KEY")
 )
 
 # Let's define a function to load the machine learning models we trained.
@@ -136,75 +136,76 @@ def make_predictions(input_df, input_dict):
 
 def explain_prediction(probability, input_dict, surname):
 
-  # We send this prompt to LAMA 3.2 to explain the prediction. The idea of this 
-  # prompt is that we're giving the LLM a lot of information about the customer
-  # and the machine learning model's prediction and asking it to explain in a way 
-  # that is easy to understand.
-  prompt = f""" You are an expert data scientist at a bank, where you specialize
-            in interpreting and explaining predictions of machine learning
-            models.
-            
-  
-  Your machine learning model has predicted that a customer named {surname} has a
-  {round(probability * 100, 1)}% probability of churning, based on the info 
-  provided below.
-        
-  Here is the customer's information:
+  # This prompt guides LAMA 3.2 to deliver a clear explanation of the prediction in a way that is accessible to customers.
+  prompt = f"""
+  You are a data scientist at a bank, specializing in interpreting and explaining predictions from machine learning models
+  to help customers understand their potential for churn and the factors that might influence it.
+
+  For a customer named {surname}, the model has predicted a {round(probability * 100, 1)}% likelihood of churning.
+  Here is the customer’s information:
+
+  Customer Information:
   {input_dict}
-  
-  Here are the machine learning model's top 10 important features for 
-  predicting churn:
-  
-    Feature.          |   Importance
-    --------------------------------
-    NumOfProducts     |  0.323888
-    IsActiveMember    |  0.164146
-    Age               |  0.109550
-    Geography_Germany |  0.091373
-    Balance           |  0.052786
-    Geography_France  |  0.046463
-    Gender_Female     |  0.045283
-    Geography_Spain   |  0.036855
-    CreditScore       |  0.035005
-    EstimatedSalary   |  0.032655
-    HasCrCard         |  0.031940
-    Tenure            |  0.030054
-    Gender_Male       |  0.000000
-    
-    
 
-  {pd.set_option('display.max_columns', None)}
+  Model's Key Features for Churn Prediction:
 
-  Here are summary statistics of the churned customers:
+    Feature            |   Importance
+    -----------------------------------
+    NumOfProducts      |  0.323888
+    IsActiveMember     |  0.164146
+    Age                |  0.109550
+    Geography_Germany  |  0.091373
+    Balance            |  0.052786
+    Geography_France   |  0.046463
+    Gender_Female      |  0.045283
+    Geography_Spain    |  0.036855
+    CreditScore        |  0.035005
+    EstimatedSalary    |  0.032655
+    HasCrCard          |  0.031940
+    Tenure             |  0.030054
+    Gender_Male        |  0.000000
 
-  {df[df['Exited'] == 1].describe()}
+  Profiles of Churned and Non-Churned Customers:
+  - Statistics for Customers Who Churned:
+    {df[df['Exited'] == 1].describe()}
 
-  Here are summary statistics of the non-churned customers:
-  
-  {df[df['Exited'] == 0].describe()}
+  - Statistics for Customers Who Did Not Churn:
+    {df[df['Exited'] == 0].describe()}
 
+  Explanation Guidelines:
+  - If the churn probability is over 40%, craft a 3-sentence explanation that clearly highlights why this customer may be at risk of churning. Focus on the most influential factors from the customer's profile that align with patterns seen in past customers who left, such as product usage, activity level, or geographical factors. Emphasize aspects that may feel most relevant to the customer’s personal situation and how their behaviors or circumstances compare to churned customers.
 
-- If the customer has over a 40% risk of churning, generate a 3 sentence explanation of why they are at a risk of churning.
-- If the customer has less than 20% risk of churning, generate a 3 sentence explanation of why they might not be at risk of churning.
-- Your explanation should be based on the customer's information, the summary
-statistics of churned and non-churned customers, and the feature importances provided.
+  - If the probability is under 20%, provide a 3-sentence explanation on why the customer is likely to stay with the bank. Highlight stable and positive factors in their profile—such as consistent engagement, favorable financial metrics, or loyalty indicators—that resemble traits of customers who typically remain. Draw comparisons to the profiles of non-churned customers, focusing on strengths or positive signs in the customer’s history that suggest satisfaction or stability.
 
+  - Use empathetic language that acknowledges the customer’s potential concerns about this analysis. If risk factors are high, frame the information in a way that shows understanding and offers reassurance by describing how the bank is aware of these trends and committed to supporting customers in similar situations.
 
-        Don't mention the probability of churning, or the machine learning model, or say anything like "Based on the machine learning model's prediction and top 10 most important features", just explain the prediction.
-          
-        """
+  - Make it clear how specific actions or conditions (e.g., increasing product usage, maintaining activity, or managing balances) have impacted other customers’ decisions in the past. Where possible, explain what might help reduce churn risk without sounding prescriptive, instead showing how others with similar profiles have benefited.
+
+  - Avoid technical terms like "model," "probability," or jargon. Instead, create a conversational, straightforward explanation that feels approachable. Use the customer’s specific details to paint a picture that shows what factors are important for their unique profile and why these might matter based on patterns seen in similar customers.
+
+  - Whenever possible, highlight how positive factors (like loyalty indicators, active engagement, or favorable financial history) help boost stability and customer satisfaction, especially if the customer’s churn risk is low. Reinforce why these positive signs might indicate that they’re well-suited to remain.
+
+  - In cases where the risk is higher, balance the explanation by not only pointing out risk factors but also suggesting which positive aspects in the customer’s profile might mitigate some risk. For example, even if they have multiple risk indicators, highlight any positive engagement trends that show signs of satisfaction.
+
+  - Consider the customer’s potential questions and address them preemptively. For example, clarify why certain factors, such as age or geography, may play a role by tying them to broader customer behavior trends. This helps make the explanation feel comprehensive and anticipates customer curiosity.
+
+  - Make the language friendly and customer-focused, with a tone that feels helpful and supportive. The goal is to deliver a clear, insightful response that helps the customer understand their unique situation in relation to others without feeling overly technical or judgmental.
+
+  Generate a friendly, intuitive response that explains why this customer might—or might not—be at risk, without mentioning the model or technical aspects.
+
+  """
 
   print("EXPLANATION PROMPT", prompt)
 
   raw_response = client.chat.completions.create(
-    model='llama-3.2-3b-preview',
+    model='llama-3.2-11b-text-preview',
     messages=[{
       "role": "user",
       "content": prompt
     }],
   )
 
-  return raw_response.choices[0].message.content # response from the LLM
+  return raw_response.choices[0].message.content  # LLM's response
 
 
 # Now, let's define a function to generate a personalized email send to the user
@@ -213,39 +214,47 @@ statistics of churned and non-churned customers, and the feature importances pro
 def generate_email(probability, input_dict, explanation, surname):
 
   prompt = f"""
-        You are a manager at HS Bank. You are responsible for ensuring customers
-        stay with the bank and are incentivized with various offers.
+  You are a manager at HS Bank, responsible for ensuring customers stay with the bank and feel valued. Your role involves reaching out to customers who may be at risk of leaving, offering them personalized support and incentives to encourage their loyalty.
 
-        You noticed a customer named{surname} has a {round(probability * 100, 1)}%
-        probability of churning.
+  You have identified that a customer named {surname} has indicators suggesting they might be considering leaving. Here is some context on their situation:
 
-        Here is the customer's information:
-        {input_dict}
+  Customer Information:
+  {input_dict}
 
-        Here is some explanation as to why the customer might be at risk of                 churning:
+  Reasons Why the Customer Might Be at Risk of Churning:
+  {explanation}
 
-        {explanation}
+  Email Guidelines:
+  - Start with a warm, personalized greeting addressing {surname} by name. Make them feel valued and acknowledged as a loyal customer of the bank.
+  - If they appear to be at risk, kindly ask them to stay by expressing appreciation for their loyalty and addressing any potential concerns they may have. Be understanding, and encourage open communication by inviting them to reach out if they have questions or feedback.
+  - Offer a tailored set of incentives that would be meaningful to the customer, based on the information provided. Frame these incentives as a way to enhance their banking experience and address potential needs or interests. Here are examples of possible incentives:
+    - Reduced fees or waived monthly charges
+    - Personalized loan or credit offers
+    - Higher interest rates on savings accounts
+    - Points or rewards for specific transactions
+    - Enhanced customer service options or dedicated account manager
+    - Access to exclusive events or financial wellness resources
+  - List these incentives in a clear, bullet-point format for easy readability and highlight how they align with the customer’s preferences or banking behaviors.
+  - Be tactful and avoid mentioning the probability of churning or any technical terms related to predictions or models. Instead, focus on building a positive and supportive tone that encourages the customer to feel secure and appreciated.
+  - Close the email by thanking the customer for their valued relationship with HS Bank, reaffirming your commitment to their satisfaction. Offer a direct line of communication if they wish to discuss further or need assistance with any aspect of their banking experience.
 
-        Generate an email to the customer based on their information, asking them to
-        stay if they are at risk of churning, or offering them incentives so that
-        they become more loyal to the bank.
+  Generate a warm, personalized email that makes the customer feel appreciated and encourages them to stay, without mentioning any predictive analysis or churn probability.
 
-        Make sure to list out a set of incentives to stay based on their info, in 
-        bullet point format. Don't ever mention the probability of churning, or the
-        machine learning model to the customer.
   """
 
+  print("EMAIL GENERATION PROMPT", prompt)
+
   raw_response = client.chat.completions.create(
-    model='llama-3.1-8b-instant',
+    model='llama-3.2-11b-text-preview',
     messages=[{
       "role": "user",
       "content": prompt
     }],
   )
-
   print("\n\nEMAIL PROMPT", prompt)
+  return raw_response.choices[0].message.content  # LLM's response
 
-  return raw_response.choices[0].message.content
+
 
 
 
