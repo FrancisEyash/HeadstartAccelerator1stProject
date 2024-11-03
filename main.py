@@ -46,6 +46,8 @@ client = OpenAI(
     api_key=os.environ.get("GROQ_API_KEY")
 )
 
+
+
 # Let's define a function to load the machine learning models we trained.
 
 def load_model(filename):
@@ -213,6 +215,14 @@ def explain_prediction(probability, input_dict, surname):
 
 def generate_email(probability, input_dict, explanation, surname):
 
+  # Determine the tone and level of incentives based on the churn probability
+  if probability > 0.4:
+      encouragement_message = "We truly value having you with us and would love to continue supporting your financial journey. To show our appreciation, we’re offering you some special incentives designed to enhance your experience with us."
+  elif probability < 0.2:
+      encouragement_message = "We’re pleased to see you’re satisfied with your banking experience. To make things even better, we’d like to extend a few exclusive offers to you as a valued member of the HS Bank family."
+  else:
+      encouragement_message = "As one of our valued customers, we’d like to ensure you’re fully supported in all your banking needs. We’re here for you and would love to make your experience even better with some tailored incentives."
+
   prompt = f"""
   You are a manager at HS Bank, responsible for ensuring customers stay with the bank and feel valued. Your role involves reaching out to customers who may be at risk of leaving, offering them personalized support and incentives to encourage their loyalty.
 
@@ -226,6 +236,7 @@ def generate_email(probability, input_dict, explanation, surname):
 
   Email Guidelines:
   - Start with a warm, personalized greeting addressing {surname} by name. Make them feel valued and acknowledged as a loyal customer of the bank.
+  - {encouragement_message}
   - If they appear to be at risk, kindly ask them to stay by expressing appreciation for their loyalty and addressing any potential concerns they may have. Be understanding, and encourage open communication by inviting them to reach out if they have questions or feedback.
   - Offer a tailored set of incentives that would be meaningful to the customer, based on the information provided. Frame these incentives as a way to enhance their banking experience and address potential needs or interests. Here are examples of possible incentives:
     - Reduced fees or waived monthly charges
@@ -243,7 +254,8 @@ def generate_email(probability, input_dict, explanation, surname):
   """
 
   print("EMAIL GENERATION PROMPT", prompt)
-
+    
+#llama-3.2-11b-text-preview
   raw_response = client.chat.completions.create(
     model='llama-3.2-11b-text-preview',
     messages=[{
@@ -252,7 +264,8 @@ def generate_email(probability, input_dict, explanation, surname):
     }],
   )
   print("\n\nEMAIL PROMPT", prompt)
-  return raw_response.choices[0].message.content  # LLM's response
+  return raw_response.choices[0].message.content   # LLM's response
+
 
 
 
